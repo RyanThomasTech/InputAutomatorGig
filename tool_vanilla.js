@@ -38,9 +38,28 @@ const btnCloseDialog = document.getElementById('gmCloseDlgBtn');
 const btnAddNums = document.getElementById('gmAddNumsBtn');
 const btnExtractSN = document.getElementById('extractSNbtn');
 const msgOut = document.getElementById('msgOut');
+const btnEditCase = document.getElementById('btnEditCase');
+const btnGuessTLA = document.getElementById('btnGuessTLA');
+const btnNCRRMAEmail = document.getElementById('btnNCRRMAEmail');
+const btnSetCaseStatusRMAIssued = document.getElementById('btnSetCaseStatusRMAIssued');
+const btnSubmitNCRRMA = document.getElementById('btnSubmitNCRRMA');
+const btnSaveRMALine = document.getElementById('btnSaveRMALine');
+const btnSetShippedToPHAR = document.getElementById('btnSetShippedToPHAR');
+const btnSetShippedToGLAR = document.getElementById('btnSetShippedToGLAR');
+const btnSetShippedToCAARFG = document.getElementById('btnSetShippedToCAARFG');
+const btnAddNewRMALine = document.getElementById('btnAddNewRMALine');
+const btnSaveRMA = document.getElementById('btnSaveRMA');
+const btnCreateAndSetRMA = document.getElementById('btnCreateAndSetRMA');
+const btnSaveTicket = document.getElementById('btnSaveTicket');
+const btnInformationForRMADept = document.getElementById('btnInformationForRMADept');
+const btnSetAreaToAdminRMAWork = document.getElementById('btnSetAreaToAdminRMAWork');
+const btnSetCustExpToMinor = document.getElementById('btnSetCustExpToMinor');
+const btnSetCaseReasonFM = document.getElementById('btnSetCaseReasonFM');
+const btnGuessNCRComponentSerial = document.getElementById('btnGuessNCRComponentSerial');
+const btnGuessNCRComponent = document.getElementById('btnGuessNCRComponent');
 
 /***
- * EVENTlISTENERS
+ * EVENTLISTENERS
  */
 
 btnAddNums.addEventListener('click', function() {
@@ -57,3 +76,79 @@ btnExtractSN.addEventListener('click', function() {
     document.getElementById("00N3600000AZNxJ").value = text.match(regex)[1];
     $("msgOut").text ("SN: " + text.match(regex)[1]); 
 })
+
+btnEditCase.addEventListener('click', function() {
+
+});
+
+btnGuessTLA.addEventListener('click', function() {
+
+});
+
+btnGuessNCRComponent.addEventListener('click', function() {
+    
+});
+
+btnGuessNCRComponentSerial.addEventListener('click', function() {
+    
+});
+
+btnSetCaseReasonFM.addEventListener('click', function() {
+    
+});
+
+btnSetCustExpToMinor.addEventListener('click', function() {
+    
+});
+
+btnSetAreaToAdminRMAWork.addEventListener('click', function() {
+    
+});
+
+btnInformationForRMADept.addEventListener('click', function() {
+    
+});
+
+btnSaveTicket.addEventListener('click', function() {
+    
+});
+
+btnCreateAndSetRMA.addEventListener('click', function() {
+    
+});
+
+btnSaveRMA.addEventListener('click', function() {
+    
+});
+
+btnAddNewRMALine.addEventListener('click', function() {
+    
+});
+
+btnSetShippedToCAARFG.addEventListener('click', function() {
+    
+});
+
+btnSetShippedToGLAR.addEventListener('click', function() {
+    
+});
+
+btnSetShippedToPHAR.addEventListener('click', function() {
+    
+});
+
+btnSaveRMALine.addEventListener('click', function() {
+    
+});
+
+btnSubmitNCRRMA.addEventListener('click', function() {
+    
+});
+
+btnSetCaseStatusRMAIssued.addEventListener('click', function() {
+    
+});
+
+btnNCRRMAEmail.addEventListener('click', function() {
+    
+});
