@@ -58,6 +58,8 @@ const btnSetCaseReasonFM = document.getElementById('btnSetCaseReasonFM');
 const btnGuessNCRComponentSerial = document.getElementById('btnGuessNCRComponentSerial');
 const btnGuessNCRComponent = document.getElementById('btnGuessNCRComponent');
 
+const descriptionText = document.getElementById('cas15').value;
+
 /***
  * EVENTLISTENERS
  */
@@ -78,43 +80,68 @@ btnExtractSN.addEventListener('click', function() {
 })
 
 btnEditCase.addEventListener('click', function() {
+    document.getElementsByName("edit")[0].click();
 
 });
 
 btnGuessTLA.addEventListener('click', function() {
+    const regex = new RegExp('TLA\\s?#\\s?(\\w+)');
+    let text = document.getElementById("cas15").value;
+
+    document.getElementById("Asset").value = text.match(regex)[1];
 
 });
 
 btnGuessNCRComponent.addEventListener('click', function() {
+    const regex = new RegExp('(VPN|PN|UNICOM PART)\s?#\s?([a-zA-Z0-9_\\-]+)\\s?');
+    const text = document.getElementById("cas15").value;
+
+    document.getElementById("CF00N3600000Ny8ka").value = text.match(regex)[1];
     
 });
 
 btnGuessNCRComponentSerial.addEventListener('click', function() {
+    const regex = new RegExp('(SN|SL|serial number)\s?#\s?([a-zA-Z0-9_\\-]+)\\s?', 'i');
+
+    document.getElementById('00N3600000AZNxJ').value = descriptionText.match(regex)[1];
     
 });
 
 btnSetCaseReasonFM.addEventListener('click', function() {
-    
+    document.getElementById('cas6').value = 'Field Malfunction';
 });
 
 btnSetCustExpToMinor.addEventListener('click', function() {
-    
+    document.getElementById('00N3600000OmpIt').value = '*  Minor';
 });
 
 btnSetAreaToAdminRMAWork.addEventListener('click', function() {
-    
+    document.getElementById('00N3600000Ny6Ne').value = 'Administrative RMA Work'   
 });
 
 btnInformationForRMADept.addEventListener('click', function() {
-    
+    document.getElementById('00N3600000Ny6Ni').value = 'Information for RMA Dept'
 });
 
 btnSaveTicket.addEventListener('click', function() {
-    
+    document.getElementsByName('save')[0].click();
 });
 
-btnCreateAndSetRMA.addEventListener('click', function() {
-    
+btnCreateAndSetRMA.addEventListener('click', async function() {
+    if (document.getElementsByName('new_rma_entry').length){
+        //Utilizing Violentmonkey's special GM.* API's
+        const NCRContactName = document.getElementById('cas3_ileinner').innerText;
+        const NCRContactPhone = document.getElementById('cas10_ileinner').innerText;
+        const NCRContactEmail = document.getElementById('cas9_ileinner').innerText;
+        const NCRAccNum = document.getElementById('00N36000007vIzI_ilecell').innerText;
+        const NCRContactInfo = JSON.stringify({name: NCRContactName, phone: NCRContactPhone, email: NCRContactEmail, accnum: NCRAccNum});
+        await GM.setValue(NCRInfo, NCRContactInfo);
+
+        verifyAddressAndAccountNumberMatches(NCRContactInfo);
+        
+    } else {
+        alert("New RMA entry button not found. Please confirm you are on the case page.");
+    }
 });
 
 btnSaveRMA.addEventListener('click', function() {
@@ -152,3 +179,48 @@ btnSetCaseStatusRMAIssued.addEventListener('click', function() {
 btnNCRRMAEmail.addEventListener('click', function() {
     
 });
+
+/*******************
+ * MISC. FUNCTIONS *
+ ******************/
+
+async function verifyAddressAndAccountNumberMatches(json) {
+    const contactInfo = JSON.parse(json);
+    const RMADesc = document.getElementById('cas15_ileinner').innerText;
+    if (RMADesc.indexOf('HONG KONG') != -1){
+        if (contactInfo.accnum == 'NCR0003' || contactInfo.accnum == 'VESFRU03'){
+            //nothing required
+        } else {
+            matchAccDataToAddress(3);
+        }
+
+    } else if (RMADesc.indexOf('MEMPHIS') != -1){
+        if (contactInfo.accnum == 'NCR0001' || contactInfo.accnum == 'VESFRU01'){
+            //nothing required
+        } else {
+            matchAccDataToAddress(1);
+        }
+
+    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
+        if (contactInfo.accnum == 'NCR0002' || contactInfo.accnum == 'VESFRU02'){
+            //nothing required
+        } else {
+            //consider using GM_notification for this if users dont get enough warning
+            alert("The Account Name / Number is wrong. It should be NCR0002 / VESFRU02. Changing it.");
+        }
+        
+    }
+};
+
+async function matchAccDataToAddress(digit){
+    alert("The Account Name / Number is wrong. It should be NCR000" + digit + " / VESFRU0" + digit + ". Changing it.");
+    document.getElementsByName('edit')[0].click();
+    window.addEventListener("load", () => {
+        alert("page loaded");
+        /*switch (digit){
+            case 1:
+
+        }
+        */
+    })
+}
