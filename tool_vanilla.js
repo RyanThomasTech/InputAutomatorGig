@@ -25,7 +25,6 @@ popupBox.innerHTML = `
         <button id="btnNCRRMAEmail" type="button">Write NCR RMA Email</button>
 
         <button id="gmCloseDlgBtn" type="button">Close popup</button>         
-        <button id="extractSNBtn" type="button">Extract Serial</button>       
     </form>
 `
 body.appendChild(popupBox);
@@ -35,8 +34,6 @@ body.appendChild(popupBox);
  ***********************************/
 
 const btnCloseDialog = document.getElementById('gmCloseDlgBtn');
-const btnAddNums = document.getElementById('gmAddNumsBtn');
-const btnExtractSN = document.getElementById('extractSNbtn');
 const msgOut = document.getElementById('msgOut');
 const btnEditCase = document.getElementById('btnEditCase');
 const btnGuessTLA = document.getElementById('btnGuessTLA');
@@ -58,52 +55,222 @@ const btnSetCaseReasonFM = document.getElementById('btnSetCaseReasonFM');
 const btnGuessNCRComponentSerial = document.getElementById('btnGuessNCRComponentSerial');
 const btnGuessNCRComponent = document.getElementById('btnGuessNCRComponent');
 
-const descriptionText = document.getElementById('cas15').value;
-
+const g_UnicomSFDC_RMA_Information_RMA_Type = '00N36000006t9rQ';
+const g_UnicomSFDC_RMA_Address_Company_Name = '00N36000006trWL';
+const g_UnicomSFDC_RMA_Address_First_Name = '00N36000006treu';
+const g_UnicomSFDC_RMA_Address_Last_Name = '00N36000006trf9';
+const g_UnicomSFDC_RMA_Address_Address = '00N36000006tsMP';
+const g_UnicomSFDC_RMA_Address_Address2 = '00N36000007uNIv';
+const g_UnicomSFDC_RMA_Address_Phone = '00N36000006ts0c';
+const g_UnicomSFDC_RMA_Address_City = '00N36000006tsMK';
+const g_UnicomSFDC_RMA_Address_Zipcode = '00N36000006txUX';
+const g_UnicomSFDC_RMA_Address_Country = '00N3600000NykWz';
+const g_UnicomSFDC_RMA_Address_StateProvince = '00N3600000NykXJ';
+const g_UnicomSFDC_RMA_ShipVia = '00N3600000NxnoD';
+const g_UnicomSFDC_RMA_ShipSLA = '00N3600000RUreH';
 /***
- * EVENTLISTENERS
+ * ON PAGELOAD
  */
 
-btnAddNums.addEventListener('click', function() {
-    const firstVal = document.getElementById('myNumber1').value;
-    const secondVal = document.getElementById('myNumber2').value;
-    let result = firstVal + secondVal;
-    msgOut.innerHTML = result;
+window.addEventListener('load', async function () {
+    const nextTask = await GM.getValue("nextTask", "none");
+    switch (nextTask){
+        case "matchAccNumToAddress":
+            await GM.deleteValue("nextTask");
+            handleMismatchAccNumAndAddress();
+            break;
+        case "createNewRMA":
+            await GM.deleteValue("nextTask");
+            createNewRMA();
+            break;
+        case "populateNewRMA":
+            await GM.deleteValue("nextTask");
+            populateNewRMAFields();
+            break;
+        case 'submitRMA':
+            await GM.deleteValue('nextTask');
+            submitRMA();
+            break;
+        case 'setRMAIssued':
+            await GM.deleteValue('nextTask');
+            setRMAIssued();
+            break;
+        default:
+            break;
+    }
 });
 
-btnExtractSN.addEventListener('click', function() {
-    let regex = new RegExp('(?:serials? numb?e?r?s?|SNs?).*:\\s?(\\w{7})\\s', 'i');
-    let text = document.getElementById("cas15").value;
+/*******************
+ * MISC. FUNCTIONS *
+ ******************/
 
-    document.getElementById("00N3600000AZNxJ").value = text.match(regex)[1];
-    $("msgOut").text ("SN: " + text.match(regex)[1]); 
-})
+async function handleMismatchAccNumAndAddress(){
+    const accNum = await JSON.parse(GM.getValue("accInfo","0000000000")).accnum;
+    const lastDigit = parseInt(accNum[accNum.length - 1],10);
+    const accIsNCR = ((accNum.substring(0,2) == 'NCR') ? true : false );
+    switch(lastDigit){
+        case 1:
+            document.getElementById('cas4').value = (accIsNCR ? 'NCR Corporation' : 'Veritas Technologies LLC');
+            break;
+        case 2:
+            document.getElementById('cas4').value = (accIsNCR ? 'NCR ESLC B.V.' : 'Veritas Storage (Ireland) Ltd.');
+            break;
+        case 3:
+            document.getElementById('cas4').value = (accIsNCR ? 'NCR Hong Kong Ltd.' : 'Veritas Corp Hong Kong');
+            break;
+        default:
+            break;
+        }
+           
+   
+    await GM.setValue("nextTask", "createNewRMA");
+    document.getElementsByName('save')[0].click();
+};
+
+async function populateNewRMAFields(){
+    const PONum = await GM.getValue("PONum", null);
+    await GM.deleteValue("PONum");
+    const RMADesc = document.getElementById('00N36000006u06F').value;
+    if (RMADesc.indexOf('HONG KONG') != -1){
+        setRMAAddressToHongKong();
+    } else if (RMADesc.indexOf('MEMPHIS') != -1){
+        setRMAAddressToMemphis();
+    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
+       setRMAAddressToHoltum();
+    } else {
+        alert("No valid NCR Address found. Address not set.");
+    }
+}
+
+function setRMAAddressToHongKong(){
+    document.getElementById(g_UnicomSFDC_RMA_Information_RMA_Type ).value = 'REPAIR_PH';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Company_Name ).value = 'NCR Asia Regional Parts Center';
+    document.getElementById(g_UnicomSFDC_RMA_Address_First_Name ).value = 'Kenneth';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Last_Name ).value = 'Chui';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Address ).value = 'Room 501 & 502, 5/F';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Address2 ).value = 'Kerry (Tsuen Wan) Warehouse No.3, Shing Yiu Street';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Phone ).value = '852-29897721';
+    document.getElementById(g_UnicomSFDC_RMA_Address_City ).value = 'Kwai Chung';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Zipcode ).value = ' ';
+    document.getElementById(g_UnicomSFDC_RMA_Address_Country ).value = 'Hong Kong';
+    document.getElementById(g_UnicomSFDC_RMA_Address_StateProvince ).value = '--None--';
+    document.getElementById(g_UnicomSFDC_RMA_ShipVia ).value = 'FEDX-I ECONOMY';
+    document.getElementById(g_UnicomSFDC_RMA_ShipSLA ).value = 'R&R';
+}
+
+function setRMAAddressToMemphis(){
+    document.getElementById( g_UnicomSFDC_RMA_Information_RMA_Type ).value = 'REPAIR';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Company_Name ).value = 'NCR C/O FedEx Global Supply Chain Services';
+    document.getElementById( g_UnicomSFDC_RMA_Address_First_Name   ).value = 'Kelly';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Last_Name    ).value = 'Brickell';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Address      ).value = '5025 Tuggle Rd';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Address2     ).value = '';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Phone        ).value = '770-288-1732';
+    document.getElementById( g_UnicomSFDC_RMA_Address_City         ).value = 'Memphis';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Zipcode      ).value = '38118';
+    document.getElementById( g_UnicomSFDC_RMA_Address_Country      ).value = 'United States';
+    document.getElementById( g_UnicomSFDC_RMA_Address_StateProvince).value = 'TN';
+    document.getElementById( g_UnicomSFDC_RMA_ShipVia              ).value = 'FEDX GROUND';
+    document.getElementById( g_UnicomSFDC_RMA_ShipSLA              ).value = 'R&R';
+}
+
+function setRMAAddressToHoltum() {
+    document.getElementById( g_UnicomSFDC_RMA_Information_RMA_Type ).value = 'REPAIRIRE'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Company_Name ).value = 'NCR Dutch Holdings B.V. c/o Mainfreight Logistic Services'
+    document.getElementById( g_UnicomSFDC_RMA_Address_First_Name   ).value = 'Pim'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Last_Name    ).value = 'Houtvast'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Address      ).value = 'Holtum-Noordweg 8B'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Address2     ).value = ' '
+    document.getElementById( g_UnicomSFDC_RMA_Address_Phone        ).value = '+31207151515'
+    document.getElementById( g_UnicomSFDC_RMA_Address_City         ).value = 'Born'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Zipcode      ).value = '6121 RE'
+    document.getElementById( g_UnicomSFDC_RMA_Address_Country      ).value = 'Netherlands'
+    document.getElementById( g_UnicomSFDC_RMA_Address_StateProvince).value = '--None--'
+    document.getElementById( g_UnicomSFDC_RMA_ShipVia              ).value = 'FEDX-I ECONOMY'
+    document.getElementById( g_UnicomSFDC_RMA_ShipSLA              ).value = 'R&R'
+}
+
+function verifyAddressAndAccountNumberMatches(json) {
+    const contactInfo = JSON.parse(json);
+    const RMADesc = document.getElementById('cas15_ileinner').innerText;
+    if (RMADesc.indexOf('HONG KONG') != -1){
+        if (contactInfo.accnum == 'NCR0003' || contactInfo.accnum == 'VESFRU03'){
+            //nothing required
+        } else {
+            matchAccDataToAddress(3);
+        }
+    } else if (RMADesc.indexOf('MEMPHIS') != -1){
+        if (contactInfo.accnum == 'NCR0001' || contactInfo.accnum == 'VESFRU01'){
+            //nothing required
+        } else {
+            matchAccDataToAddress(1);
+        }
+    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
+        if (contactInfo.accnum == 'NCR0002' || contactInfo.accnum == 'VESFRU02'){
+            //nothing required
+        } else {
+            matchAccDataToAddress(1);
+        }
+    } else {
+        alert('No valid NCR address was found. Could not check NCR account.');
+    }
+};
+
+async function matchAccDataToAddress(digit){
+    //consider using GM_notification for this if users dont get enough warning
+    alert('The Account Name / Number is wrong. It should be NCR000' + digit + ' / VESFRU0' + digit + '. Changing it.');
+    await GM.setValue('nextTask','matchAccNumToAddress');
+
+    document.getElementsByName('edit')[0].click();
+}
+
+async function createNewRMA(){
+    const regex = new RegExp('PO\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?');
+    const PONum = document.getElementById('cas15_ileinner').innerText.match(regex)[1];
+    await GM.setValue('PONum', PONum);
+    await GM.setValue('nextTask', 'populateNewRMA');
+    document.getElementsByName('new_rma_entry')[0].click();
+}
+
+function submitRMA(){
+    document.getElementById('00N36000006tAnC').checked = true;
+    document.getElementsByName('save')[0].click();
+}
+
+function setRMAIssued(){
+    document.getElementById('cas7').value = 'RMA Issued';
+    document.getElementsByName('save')[0].click();
+}
+
+/***
+ * BUTTON EVENTLISTENERS
+ */
 
 btnEditCase.addEventListener('click', function() {
-    document.getElementsByName("edit")[0].click();
+    document.getElementsByName('edit')[0].click();
 
 });
 
 btnGuessTLA.addEventListener('click', function() {
     const regex = new RegExp('TLA\\s?#\\s?(\\w+)');
-    let text = document.getElementById("cas15").value;
+    let text = document.getElementById('cas15').value;
 
-    document.getElementById("Asset").value = text.match(regex)[1];
+    document.getElementById('Asset').value = text.match(regex)[1];
 
 });
 
 btnGuessNCRComponent.addEventListener('click', function() {
-    const regex = new RegExp('(VPN|PN|UNICOM PART)\s?#\s?([a-zA-Z0-9_\\-]+)\\s?');
-    const text = document.getElementById("cas15").value;
+    const regex = new RegExp('(VPN|PN|UNICOM PART)\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?');
+    const text = document.getElementById('cas15').value;
 
-    document.getElementById("CF00N3600000Ny8ka").value = text.match(regex)[1];
+    document.getElementById('CF00N3600000Ny8ka').value = text.match(regex)[2];
     
 });
 
 btnGuessNCRComponentSerial.addEventListener('click', function() {
-    const regex = new RegExp('(SN|SL|serial number)\s?#\s?([a-zA-Z0-9_\\-]+)\\s?', 'i');
+    const regex = new RegExp('(SN|SL|serial number)\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?', 'i');
 
-    document.getElementById('00N3600000AZNxJ').value = descriptionText.match(regex)[1];
+    document.getElementById('00N3600000AZNxJ').value = document.getElementById('cas15').value.match(regex)[2];
     
 });
 
@@ -135,92 +302,58 @@ btnCreateAndSetRMA.addEventListener('click', async function() {
         const NCRContactEmail = document.getElementById('cas9_ileinner').innerText;
         const NCRAccNum = document.getElementById('00N36000007vIzI_ilecell').innerText;
         const NCRContactInfo = JSON.stringify({name: NCRContactName, phone: NCRContactPhone, email: NCRContactEmail, accnum: NCRAccNum});
-        await GM.setValue(NCRInfo, NCRContactInfo);
-
+        await GM.setValue('accInfo', NCRContactInfo);
         verifyAddressAndAccountNumberMatches(NCRContactInfo);
+
+        createNewRMA();
+
+        //TODO: test whether to consume here or on load
+        await GM.deleteValue('accInfo');
         
     } else {
-        alert("New RMA entry button not found. Please confirm you are on the case page.");
+        alert('New RMA entry button not found. Please confirm you are on the case page.');
     }
 });
 
 btnSaveRMA.addEventListener('click', function() {
-    
+    document.getElementsByName('save')[0].click();
 });
 
 btnAddNewRMALine.addEventListener('click', function() {
-    
+    document.getElementsByName('new_rma_line')[0].click();
 });
 
 btnSetShippedToCAARFG.addEventListener('click', function() {
-    
+    document.getElementById('00N3600000RUreO').value = 'Canton';
+    document.getElementById('00N3600000BPydq').value = 'CA-AR-FG';
 });
 
 btnSetShippedToGLAR.addEventListener('click', function() {
+    document.getElementById('00N3600000RUreO').value = 'Galway';
+    document.getElementById('00N3600000BPydq').value = 'GL-AR';
     
 });
 
 btnSetShippedToPHAR.addEventListener('click', function() {
+    document.getElementById('00N3600000RUreO').value = 'Manila';
+    document.getElementById('00N3600000BPydq').value = 'PH-AR';
     
 });
 
 btnSaveRMALine.addEventListener('click', function() {
-    
+    document.getElementById('save')[0].click();
 });
 
-btnSubmitNCRRMA.addEventListener('click', function() {
-    
+btnSubmitNCRRMA.addEventListener('click', async function() {
+    await GM.setValue('nextTask','submitRMA');
+    document.getElementsByName('edit')[0].click();   
 });
 
-btnSetCaseStatusRMAIssued.addEventListener('click', function() {
-    
+btnSetCaseStatusRMAIssued.addEventListener('click', async function() {
+    await GM.setValue('nextTask','setRMAIssued');
+    document.getElementsByName('edit')[0].click();   
 });
 
 btnNCRRMAEmail.addEventListener('click', function() {
     
 });
-
-/*******************
- * MISC. FUNCTIONS *
- ******************/
-
-async function verifyAddressAndAccountNumberMatches(json) {
-    const contactInfo = JSON.parse(json);
-    const RMADesc = document.getElementById('cas15_ileinner').innerText;
-    if (RMADesc.indexOf('HONG KONG') != -1){
-        if (contactInfo.accnum == 'NCR0003' || contactInfo.accnum == 'VESFRU03'){
-            //nothing required
-        } else {
-            matchAccDataToAddress(3);
-        }
-
-    } else if (RMADesc.indexOf('MEMPHIS') != -1){
-        if (contactInfo.accnum == 'NCR0001' || contactInfo.accnum == 'VESFRU01'){
-            //nothing required
-        } else {
-            matchAccDataToAddress(1);
-        }
-
-    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
-        if (contactInfo.accnum == 'NCR0002' || contactInfo.accnum == 'VESFRU02'){
-            //nothing required
-        } else {
-            //consider using GM_notification for this if users dont get enough warning
-            alert("The Account Name / Number is wrong. It should be NCR0002 / VESFRU02. Changing it.");
-        }
-        
-    }
-};
-
-async function matchAccDataToAddress(digit){
-    alert("The Account Name / Number is wrong. It should be NCR000" + digit + " / VESFRU0" + digit + ". Changing it.");
-    document.getElementsByName('edit')[0].click();
-    window.addEventListener("load", () => {
-        alert("page loaded");
-        /*switch (digit){
-            case 1:
-
-        }
-        */
-    })
-}
