@@ -23,6 +23,10 @@ popupBox.innerHTML = `
         <button id="btnSubmitNCRRMA" type="button">Submit the NCR RMA</button>
         <button id="btnSetCaseStatusRMAIssued" type="button">Set Case Status to RMA Issued</button>
         <button id="btnNCRRMAEmail" type="button">Write NCR RMA Email</button>
+        <input type="text" id="fieldRMANum" name="fieldRMANum">
+        <button id="btnNCRRMAOOWEmail" type="button">Write NCR RMA Out-Of-Warranty Email</button>
+        <button id="btnCloseCase" type="button">Close case w/ note issued + PDF sent</button>
+        <button id="btnCloseCaseOOW" type="button">Close case w/ OOW note</button>
 
         <button id="gmCloseDlgBtn" type="button">Close popup</button>         
     </form>
@@ -54,6 +58,11 @@ const btnSetCustExpToMinor = document.getElementById('btnSetCustExpToMinor');
 const btnSetCaseReasonFM = document.getElementById('btnSetCaseReasonFM');
 const btnGuessNCRComponentSerial = document.getElementById('btnGuessNCRComponentSerial');
 const btnGuessNCRComponent = document.getElementById('btnGuessNCRComponent');
+const btnNCRRMAOOWEmail = document.getElementById('btnNCRRMAOOWEmail');
+const btnCloseCase= document.getElementById('btnCloseCase');
+const btnCloseCaseOOW = document.getElementById('btnCloseCaseOOW');
+
+const inputRMANum = document.getElementById('fieldRMANum');
 
 const g_UnicomSFDC_RMA_Information_RMA_Type = '00N36000006t9rQ';
 const g_UnicomSFDC_RMA_Address_Company_Name = '00N36000006trWL';
@@ -95,6 +104,10 @@ window.addEventListener('load', async function () {
             await GM.deleteValue('nextTask');
             setRMAIssued();
             break;
+        case 'writeRMAEmail':
+            await GM.deleteValue('nextTask');
+            populateEmailFields();
+            break;
         default:
             break;
     }
@@ -107,7 +120,7 @@ window.addEventListener('load', async function () {
 async function handleMismatchAccNumAndAddress(){
     const accNum = await JSON.parse(GM.getValue("accInfo","0000000000")).accnum;
     const lastDigit = parseInt(accNum[accNum.length - 1],10);
-    const accIsNCR = ((accNum.substring(0,2) == 'NCR') ? true : false );
+    const accIsNCR = ((accNum.substring(0,3) == 'NCR') ? true : false );
     switch(lastDigit){
         case 1:
             document.getElementById('cas4').value = (accIsNCR ? 'NCR Corporation' : 'Veritas Technologies LLC');
@@ -209,7 +222,7 @@ function verifyAddressAndAccountNumberMatches(json) {
         if (contactInfo.accnum == 'NCR0002' || contactInfo.accnum == 'VESFRU02'){
             //nothing required
         } else {
-            matchAccDataToAddress(1);
+            matchAccDataToAddress(2);
         }
     } else {
         alert('No valid NCR address was found. Could not check NCR account.');
@@ -242,9 +255,47 @@ function setRMAIssued(){
     document.getElementsByName('save')[0].click();
 }
 
-/***
- * BUTTON EVENTLISTENERS
- */
+async function populateEmailFields(){
+    const json = JSON.parse(await GM.getValue('emailData', JSON.stringify({customerRefNum: 'NOT FOUND',insertedRMANum: 'NOT FOUND', inWarranty: 0})));
+    await GM.deleteValue('emailData');
+    document.getElementById('p26').value = 'support@unicomengineering.com:Unicom Engineering Support';
+    const caseNum = document.getElementById('p3').value;
+    const subjLine = "Unicom Support Request " + caseNum + " - NCR " + json.customerRefNum;
+    if (json.inWarranty){
+        const bodyLine = 'Hi NCR Team,\n\nPlease use ' + json.insertedRMANum + ' for this RMA+\nYou should be receiving a copy of the PDF shortly+\n\nRegards,\nUNICOM Support Staff';
+    } else {
+        const bodyLine = 'Hi NCR Team,\n\nThe warranty on this serial number expired on XXXXXXXXXXXXXXXXXXXX and it is no longer eligible for an RMA.\n\nRegards,\n';
+    }
+    document.getElementById('p6').value = subjLine;
+    document.getElementById('p7').value = bodyLine;
+}
+
+function verifyNCREmailButton(inWarranty){
+    if (document.getElementsByName('send_email').length){
+        const accNumSS = document.getElementById('00N36000007vIzI_ileinner').innerText.substring(0,3);
+        
+        if (!(accNumSS == 'VES' || accNumSS == 'NCR')){
+            alert('This does not appear to be an NCR ticket.');
+        } else {
+            getEmailData(inWarranty);
+        }
+    } else {
+        alert('Salesforce is not on the correct page. Please go to the \'Cases\' tab and try again.');
+    }
+}
+
+async function getEmailData(inWarranty){
+    const json = JSON.stringify({   customerRefNum : document.getElementById('00N3600000Ny6Nf_ileinner').innerText,
+                                    insertedRMANum : inputRMANum.value,
+                                    inWarranty: inWarranty});
+    await GM.setValue('emailData', json);
+    await GM.setValue('nextTask','writeRMAEmail');
+    document.getElementsByName('send_email')[0].click();
+}
+
+/*************************
+ * BUTTON EVENTLISTENERS *
+ ************************/
 
 btnEditCase.addEventListener('click', function() {
     document.getElementsByName('edit')[0].click();
@@ -306,10 +357,6 @@ btnCreateAndSetRMA.addEventListener('click', async function() {
         verifyAddressAndAccountNumberMatches(NCRContactInfo);
 
         createNewRMA();
-
-        //TODO: test whether to consume here or on load
-        await GM.deleteValue('accInfo');
-        
     } else {
         alert('New RMA entry button not found. Please confirm you are on the case page.');
     }
@@ -341,7 +388,7 @@ btnSetShippedToPHAR.addEventListener('click', function() {
 });
 
 btnSaveRMALine.addEventListener('click', function() {
-    document.getElementById('save')[0].click();
+    document.getElementsByName('save')[0].click();
 });
 
 btnSubmitNCRRMA.addEventListener('click', async function() {
@@ -355,5 +402,23 @@ btnSetCaseStatusRMAIssued.addEventListener('click', async function() {
 });
 
 btnNCRRMAEmail.addEventListener('click', function() {
-    
+    verifyNCREmailButton(1);
+});
+
+btnNCRRMAOOWEmail.addEventListener('click', function() {
+    verifyNCREmailButton(0);
+});
+
+btnCloseCase.addEventListener('click', function() {
+    document.getElementById('cas7').value = 'Closed';
+    document.getElementById('cas6').value = 'Field Malfunction';
+    document.getElementById('cas16').value = 'RMA issued.  PDF sent from GP.  Closing ticket.';
+    document.getElementById('solNote').value = 'RMA issued.  PDF sent from GP.  Closing ticket.';
+});
+
+btnCloseCaseOOW.addEventListener('click', function() {
+    document.getElementById('cas7').value = 'Closed';
+    document.getElementById('cas6').value = 'Field Malfunction';
+    document.getElementById('cas16').value = 'Out of warranty.  No RMA.  Closing ticket.';
+    document.getElementById('solNote').value = 'Out of warranty.  No RMA.  Closing ticket.';
 });
