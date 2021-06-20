@@ -4,38 +4,49 @@ macroBoxBox.id = 'macroBoxContainer';
 macroBoxBox.className = 'macroBoxContainer';
 macroBoxBox.innerHTML = `
     <button id="btnMinMax" class="macroBoxUI">&ndash;</button>
-    <div id="NCRButtons" class="macroBoxContent"> 
+    <div id="statusBar" class="flexContainer macroBoxContent">
+        <p>Status: </p>
         <p id="msgOut">&nbsp;</p>
+    </div>
+    <div id="NCRButtons" class="macroBoxContent"> 
         <button id="btnEditCase" type="button">Put NCR Ticket in Edit mode</button> 
         <br /> 
         <button id="btnGuessTLA" type="button">Guess NCR TLA from Desc</button>  
         <button id="btnGuessNCRComponent" type="button">Guess NCR Component Product</button>  
         <button id="btnGuessNCRComponentSerial" type="button">Guess NCR Component Serial Number</button>  
-        <button id="btnSetCaseReasonFM" type="button">Set Case Reason </button> 
+        <button id="btnSetCaseReasonFM" type="button">Set Case Reason to Field Malfunction</button> 
         <button id="btnSetCustExpToMinor" type="button">Set Customer Experience Priority to Minor</button> 
         <button id="btnSetAreaToAdminRMAWork" type="button">Set Area to Administrative RMA Work</button>
         <button id="btnInformationForRMADept" type="button">Set Sub-area to Information for RMA Department</button>
         <br />
         <button id="btnSaveTicket" type="button">Save the ticket</button>
+        <div class="directions">Is it in warranty?</div>
         <button id="btnCreateAndSetRMA" type="button">Create RMA and Set RMA Address based on Description</button>
+        <br />
         <button id="btnSaveRMA" type="button">Save the RMA</button>
         <br />
         <button id="btnAddNewRMALine" type="button">Add new RMA Line Item</button>
-        <button id="btnSetShippedToCAARFG" type="button">Set WareHouse Part Shipped to CA-AR-FG</button>
-        <button id="btnSetShippedToGLAR" type="button">Set WareHouse Part Shipped to GL-AR</button>
-        <button id="btnSetShippedToPHAR" type="button">Set WareHouse Part Shipped to PH-AR</button>
+        <div id="divWareHouseParts" class="flexContainer">
+            <p>Set Warehouse Part Shipped To: </p>
+            <button id="btnSetShippedToCAARFG" type="button">CA-AR-FG</button>
+            <p> -OR- </p>
+            <button id="btnSetShippedToGLAR" type="button">GL-AR</button>
+            <p> -OR- </p>
+            <button id="btnSetShippedToPHAR" type="button">PH-AR</button>
+        </div>
         <button id="btnSaveRMALine" type="button">Save the RMA Line Item</button>
         <div class="directions">Return to the RMA Header</div>
         <button id="btnSubmitNCRRMA" type="button">Submit the NCR RMA</button>
-        <br />
+        <div class="directions">Return to the Case</div>
         <button id="btnSetCaseStatusRMAIssued" type="button">Set Case Status to RMA Issued</button>
-        <button id="btnNCRRMAEmail" type="button">Write NCR RMA Email</button>
-        <input type="text" id="fieldRMANum" name="fieldRMANum">
+        <div id="divNCREmail" class="flexContainer">
+            <button id="btnNCRRMAEmail" type="button">Write NCR RMA Email</button>
+            <p>using RMA number </p>
+            <input type="text" id="fieldRMANum" name="fieldRMANum">
+            <button id="btnCloseCase" type="button">Close case w/ note issued + PDF sent</button>
+        </div>
         <button id="btnNCRRMAOOWEmail" type="button">Write NCR RMA Out-Of-Warranty Email</button>
-        <button id="btnCloseCase" type="button">Close case w/ note issued + PDF sent</button>
         <button id="btnCloseCaseOOW" type="button">Close case w/ OOW note</button>
-
-        <button id="gmCloseDlgBtn" type="button">Close macroBox</button>         
     </form>
 `
 body.appendChild(macroBoxBox);
@@ -471,6 +482,14 @@ GM.addStyle(`
         z-index: 9999;
     }
 
+    .macroBoxContent{
+        margin: 0em 0.5em;
+    }
+
+    .directions{
+        margin: 0.5em;
+    }
+
     #msgOut {
         display: block;
         position: relative;
@@ -496,6 +515,16 @@ GM.addStyle(`
         -moz-appearance: none;
     }
 
+    .flexContainer {
+        display: inline-flex;
+        flex-flow: row wrap;
+        justify-content: flex-start;
+    }
+
+    .flexContainer>p{
+        margin: 0.5em 0em;
+    }
+
     button:hover,
     button:focus {
         background: #0085c4;
@@ -519,16 +548,6 @@ GM.addStyle(`
         padding: 0;
         font-weight: bold;
         border: none;
-    }
-
-    #macroBoxContent{
-        margin: 0em 0.5em;
-    }
-
-    #topbar {
-        background: #76c9d4;
-        cursor: move;
-        text-align: right;
     }
 
     .macroBoxContainer.minimize {
