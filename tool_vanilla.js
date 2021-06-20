@@ -77,6 +77,12 @@ const g_UnicomSFDC_RMA_Address_Country = '00N3600000NykWz';
 const g_UnicomSFDC_RMA_Address_StateProvince = '00N3600000NykXJ';
 const g_UnicomSFDC_RMA_ShipVia = '00N3600000NxnoD';
 const g_UnicomSFDC_RMA_ShipSLA = '00N3600000RUreH';
+
+const regexPONum= new RegExp('(?:^|\\s)PO(?:\\s+)?(?::|#|is|nbr)?\\s+([0-9_\\-]{7})\\s?','i');
+const regexTLANum = new RegExp('TLA(?:\\s+)?(?::|#|is|nbr|nbr|nbr)?\\s?(\\w+)');
+const regexpartnum = new RegExp('(?:^|\\s)(?:vendor part|vpn|pn|unicom part)(?:\\s+)?(?::|#|is|nbr)?\\s?([a-za-z0-9_\\-]+)\\s?','i');
+const regexserialnum = new RegExp('(?:^|\\s)(?:sn|sl|serial number)(?:\\s+)?(?::|#|is|nbr)?\\s?([a-za-z0-9_\\-]+)\\s?', 'i');
+
 /***
  * ON PAGELOAD
  */
@@ -238,7 +244,7 @@ async function matchAccDataToAddress(digit){
 }
 
 async function createNewRMA(){
-    const regex = new RegExp('PO\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?');
+    const regex = regexPONum;
     const PONum = document.getElementById('cas15_ileinner').innerText.match(regex)[1];
     await GM.setValue('PONum', PONum);
     await GM.setValue('nextTask', 'populateNewRMA');
@@ -303,7 +309,7 @@ btnEditCase.addEventListener('click', function() {
 });
 
 btnGuessTLA.addEventListener('click', function() {
-    const regex = new RegExp('TLA\\s?#\\s?(\\w+)');
+    const regex = regexTLANum;
     let text = document.getElementById('cas15').value;
 
     document.getElementById('Asset').value = text.match(regex)[1];
@@ -311,17 +317,17 @@ btnGuessTLA.addEventListener('click', function() {
 });
 
 btnGuessNCRComponent.addEventListener('click', function() {
-    const regex = new RegExp('(VPN|PN|UNICOM PART)\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?');
+    const regex = regexPartNum;
     const text = document.getElementById('cas15').value;
 
-    document.getElementById('CF00N3600000Ny8ka').value = text.match(regex)[2];
+    document.getElementById('CF00N3600000Ny8ka').value = text.match(regex)[1];
     
 });
 
 btnGuessNCRComponentSerial.addEventListener('click', function() {
-    const regex = new RegExp('(SN|SL|serial number)\\s?#\\s?([a-zA-Z0-9_\\-]+)\\s?', 'i');
+    const regex = regexSerialNum;
 
-    document.getElementById('00N3600000AZNxJ').value = document.getElementById('cas15').value.match(regex)[2];
+    document.getElementById('00N3600000AZNxJ').value = document.getElementById('cas15').value.match(regex)[1];
     
 });
 
