@@ -1,10 +1,13 @@
-const popupBox = document.createElement('div');
+const macroBoxBox = document.createElement('div');
 const body = document.body;
-popupBox.id = 'popupContainer';
-popupBox.innerHTML = `
-    <form> 
+macroBoxBox.id = 'macroBoxContainer';
+macroBoxBox.className = 'macroBoxContainer';
+macroBoxBox.innerHTML = `
+    <button id="btnMinMax" class="macroBoxUI">&ndash;</button>
+    <div id="NCRButtons" class="macroBoxContent"> 
         <p id="msgOut">&nbsp;</p>
-        <button id="btnEditCase" type="button">Put NCR Ticket in Edit mode</button>  
+        <button id="btnEditCase" type="button">Put NCR Ticket in Edit mode</button> 
+        <br /> 
         <button id="btnGuessTLA" type="button">Guess NCR TLA from Desc</button>  
         <button id="btnGuessNCRComponent" type="button">Guess NCR Component Product</button>  
         <button id="btnGuessNCRComponentSerial" type="button">Guess NCR Component Serial Number</button>  
@@ -12,15 +15,19 @@ popupBox.innerHTML = `
         <button id="btnSetCustExpToMinor" type="button">Set Customer Experience Priority to Minor</button> 
         <button id="btnSetAreaToAdminRMAWork" type="button">Set Area to Administrative RMA Work</button>
         <button id="btnInformationForRMADept" type="button">Set Sub-area to Information for RMA Department</button>
+        <br />
         <button id="btnSaveTicket" type="button">Save the ticket</button>
         <button id="btnCreateAndSetRMA" type="button">Create RMA and Set RMA Address based on Description</button>
         <button id="btnSaveRMA" type="button">Save the RMA</button>
+        <br />
         <button id="btnAddNewRMALine" type="button">Add new RMA Line Item</button>
         <button id="btnSetShippedToCAARFG" type="button">Set WareHouse Part Shipped to CA-AR-FG</button>
         <button id="btnSetShippedToGLAR" type="button">Set WareHouse Part Shipped to GL-AR</button>
         <button id="btnSetShippedToPHAR" type="button">Set WareHouse Part Shipped to PH-AR</button>
         <button id="btnSaveRMALine" type="button">Save the RMA Line Item</button>
+        <div class="directions">Return to the RMA Header</div>
         <button id="btnSubmitNCRRMA" type="button">Submit the NCR RMA</button>
+        <br />
         <button id="btnSetCaseStatusRMAIssued" type="button">Set Case Status to RMA Issued</button>
         <button id="btnNCRRMAEmail" type="button">Write NCR RMA Email</button>
         <input type="text" id="fieldRMANum" name="fieldRMANum">
@@ -28,10 +35,10 @@ popupBox.innerHTML = `
         <button id="btnCloseCase" type="button">Close case w/ note issued + PDF sent</button>
         <button id="btnCloseCaseOOW" type="button">Close case w/ OOW note</button>
 
-        <button id="gmCloseDlgBtn" type="button">Close popup</button>         
+        <button id="gmCloseDlgBtn" type="button">Close macroBox</button>         
     </form>
 `
-body.appendChild(popupBox);
+body.appendChild(macroBoxBox);
 
 /***********************************
  * BUTTONS AND FIELDS DEFINED HERE *
@@ -118,6 +125,25 @@ window.addEventListener('load', async function () {
             break;
     }
 });
+
+/***
+ * UI STUFF
+ */
+
+let maximize = true,
+    btnMinMax = macroBoxBox.children[0];
+
+function macroBoxMinMax(){
+  if (maximize){
+    macroBoxBox.className += ' minimize';
+    btnMinMax.innerHTML = '+';
+    maximize = false;
+  } else {
+    macroBoxBox.className = macroBoxBox.className.replace(/(^| )minimize($| )/g, "");
+    btnMinMax.innerHTML = '&ndash;';
+    maximize = true;
+  }
+}
 
 /*******************
  * MISC. FUNCTIONS *
@@ -303,6 +329,8 @@ async function getEmailData(inWarranty){
  * BUTTON EVENTLISTENERS *
  ************************/
 
+btnMinMax.addEventListener('click', macroBoxMinMax);
+
 btnEditCase.addEventListener('click', function() {
     document.getElementsByName('edit')[0].click();
 
@@ -428,3 +456,94 @@ btnCloseCaseOOW.addEventListener('click', function() {
     document.getElementById('cas16').value = 'Out of warranty.  No RMA.  Closing ticket.';
     document.getElementById('solNote').value = 'Out of warranty.  No RMA.  Closing ticket.';
 });
+
+/**
+ * CSS STYLES
+ */
+
+GM.addStyle(`
+    .macroBoxContainer {
+        background: powderblue;
+        max-width: 500px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        z-index: 9999;
+    }
+
+    #msgOut {
+        display: block;
+        position: relative;
+        height: 1.5em;
+        padding: 0em 0.5em;
+    }
+
+    button {
+        display: inline-block;
+        /*border: none;*/
+        padding: 3px 6px;
+        margin: 2px 0rem;
+        text-decoration: none;
+        background: #lightgray;
+        color: #000;
+        font-family: sans-serif;
+        font-size: 12px;
+        cursor: pointer;
+        text-align: center;
+        transition: background 250ms ease-in-out, 
+                    transform 150ms ease;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+
+    button:hover,
+    button:focus {
+        background: #0085c4;
+    }
+
+    button:focus {
+        outline: 1px solid #fff;
+        outline-offset: -4px;
+    }
+
+    button:active {
+        transform: scale(0.99);
+    }
+
+    .macroBoxUI {
+        background: #76c9d4;
+        height: 2em;
+        width: 2em;
+        font-size: 1em;
+        margin: 0;
+        padding: 0;
+        font-weight: bold;
+        border: none;
+    }
+
+    #macroBoxContent{
+        margin: 0em 0.5em;
+    }
+
+    #topbar {
+        background: #76c9d4;
+        cursor: move;
+        text-align: right;
+    }
+
+    .macroBoxContainer.minimize {
+        width:2em !important;
+        height:2em !important;
+        overflow:hidden !important;
+        margin-top:0 !important;
+        margin-left:0 !important;
+        bottom:1em !important;
+        left:-1px !important;
+    }
+
+    .macroBoxContainer.minimize .macroBoxContent {
+        display:none;
+        visibility:hidden;
+    }
+`)
+
