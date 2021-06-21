@@ -1,9 +1,19 @@
-const macroBoxBox = document.createElement('div');
+// ==UserScript==
+// @name        Salesforce NCR automation form
+// @match       *://*.salesforce.com/*
+// @grant       GM.addStyle
+// @grant       GM.getValue
+// @grant       GM.setValue
+// @grant       GM.deleteValue
+// ==/UserScript==
+///salesforce\.com\/(500|a03|a02|_ui\/core\/email).*/
+
+const macroBox = document.createElement('div');
 const body = document.body;
-macroBoxBox.id = 'macroBoxContainer';
-macroBoxBox.className = 'macroBoxContainer';
-macroBoxBox.innerHTML = `
-    <button id="btnMinMax" class="macroBoxUI">&ndash;</button>
+macroBox.id = 'macroBoxContainer';
+macroBox.className = 'macroBoxContainer minimize';
+macroBox.innerHTML = `
+    <button id="btnMinMax" class="macroBoxUI">NCR</button>
     <div id="statusBar" class="flexContainer macroBoxContent">
         <p>Status: </p>
         <p id="msgOut">&nbsp;</p>
@@ -49,7 +59,7 @@ macroBoxBox.innerHTML = `
         <button id="btnCloseCaseOOW" type="button">Close case w/ OOW note</button>
     </form>
 `
-body.appendChild(macroBoxBox);
+body.appendChild(macroBox);
 
 /***********************************
  * BUTTONS AND FIELDS DEFINED HERE *
@@ -98,12 +108,12 @@ const g_UnicomSFDC_RMA_ShipSLA = '00N3600000RUreH';
 
 const regexPONum= new RegExp('(?:^|\\s)PO(?:\\s+)?(?::|#|is|nbr)?\\s+([0-9_\\-]{7})\\s?','i');
 const regexTLANum = new RegExp('TLA(?:\\s+)?(?::|#|is|nbr|nbr|nbr)?\\s?(\\w+)');
-const regexpartnum = new RegExp('(?:^|\\s)(?:vendor part|vpn|pn|unicom part)(?:\\s+)?(?::|#|is|nbr)?\\s?([a-za-z0-9_\\-]+)\\s?','i');
-const regexserialnum = new RegExp('(?:^|\\s)(?:sn|sl|serial number)(?:\\s+)?(?::|#|is|nbr)?\\s?([a-za-z0-9_\\-]+)\\s?', 'i');
+const regexPartNum = new RegExp('(?:^|\\s)(?:vendor part|vpn|pn|unicom part)(?:\\s+)?(?::|#|is|nbr)?\\s?([A-Za-z0-9_\\-]+)\\s?','i');
+const regexSerialNum = new RegExp('(?:^|\\s)(?:sn|sl|serial)(?:\\s+)?(?::|#|is|nbr|number)?\\s+([a-za-z0-9_\\-]+)\\s?', 'i');
 
-/***
- * ON PAGELOAD
- */
+/***************
+ * ON PAGELOAD *
+ ***************/
 
 window.addEventListener('load', async function () {
     const nextTask = await GM.getValue("nextTask", "none");
@@ -137,21 +147,21 @@ window.addEventListener('load', async function () {
     }
 });
 
-/***
- * UI STUFF
- */
+/************
+ * UI STUFF *
+ ************/
 
-let maximize = true,
-    btnMinMax = macroBoxBox.children[0];
+let maximize = false,
+    btnMinMax = macroBox.children[0];
 
 function macroBoxMinMax(){
   if (maximize){
-    macroBoxBox.className += ' minimize';
-    btnMinMax.innerHTML = '+';
+    macroBox.className += ' minimize';
+    btnMinMax.innerHTML = '&#9654';
     maximize = false;
   } else {
-    macroBoxBox.className = macroBoxBox.className.replace(/(^| )minimize($| )/g, "");
-    btnMinMax.innerHTML = '&ndash;';
+    macroBox.className = macroBox.className.replace(/(^| )minimize($| )/g, "");
+    btnMinMax.innerHTML = '&#9664';
     maximize = true;
   }
 }
@@ -175,9 +185,9 @@ async function handleMismatchAccNumAndAddress(){
             document.getElementById('cas4').value = (accIsNCR ? 'NCR Hong Kong Ltd.' : 'Veritas Corp Hong Kong');
             break;
         default:
+            alert('Could not determine account number. Not setting the account.');
             break;
         }
-           
    
     await GM.setValue("nextTask", "createNewRMA");
     document.getElementsByName('save')[0].click();
@@ -186,12 +196,12 @@ async function handleMismatchAccNumAndAddress(){
 async function populateNewRMAFields(){
     const PONum = await GM.getValue("PONum", null);
     await GM.deleteValue("PONum");
-    const RMADesc = document.getElementById('00N36000006u06F').value;
+    const RMADesc = document.getElementById('00N36000006u06F').value.toUpperCase();
     if (RMADesc.indexOf('HONG KONG') != -1){
         setRMAAddressToHongKong();
     } else if (RMADesc.indexOf('MEMPHIS') != -1){
         setRMAAddressToMemphis();
-    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
+    } else if (RMADesc.indexOf('HOLTUM-NOORDWEG 8B')){
        setRMAAddressToHoltum();
     } else {
         alert("No valid NCR Address found. Address not set.");
@@ -248,7 +258,7 @@ function setRMAAddressToHoltum() {
 
 function verifyAddressAndAccountNumberMatches(json) {
     const contactInfo = JSON.parse(json);
-    const RMADesc = document.getElementById('cas15_ileinner').innerText;
+    const RMADesc = document.getElementById('cas15_ileinner').innerText.toUpperCase();
     if (RMADesc.indexOf('HONG KONG') != -1){
         if (contactInfo.accnum == 'NCR0003' || contactInfo.accnum == 'VESFRU03'){
             //nothing required
@@ -261,7 +271,7 @@ function verifyAddressAndAccountNumberMatches(json) {
         } else {
             matchAccDataToAddress(1);
         }
-    } else if (RMADesc.indexOf('Holtum-Noordweg 8B')){
+    } else if (RMADesc.indexOf('HOLTUM-NOORDWEG 8B')){
         if (contactInfo.accnum == 'NCR0002' || contactInfo.accnum == 'VESFRU02'){
             //nothing required
         } else {
@@ -282,7 +292,8 @@ async function matchAccDataToAddress(digit){
 
 async function createNewRMA(){
     const regex = regexPONum;
-    const PONum = document.getElementById('cas15_ileinner').innerText.match(regex)[1];
+    const text = document.getElementById('cas15_ileinner').innerText;
+    const PONum = text.match(regex) ? text.match(regex)[1] : 'NOTFOUND';
     await GM.setValue('PONum', PONum);
     await GM.setValue('nextTask', 'populateNewRMA');
     document.getElementsByName('new_rma_entry')[0].click();
@@ -304,10 +315,11 @@ async function populateEmailFields(){
     document.getElementById('p26').value = 'support@unicomengineering.com:Unicom Engineering Support';
     const caseNum = document.getElementById('p3').value;
     const subjLine = "Unicom Support Request " + caseNum + " - NCR " + json.customerRefNum;
+    let bodyLine;
     if (json.inWarranty){
-        const bodyLine = 'Hi NCR Team,\n\nPlease use ' + json.insertedRMANum + ' for this RMA+\nYou should be receiving a copy of the PDF shortly+\n\nRegards,\nUNICOM Support Staff';
+        bodyLine = 'Hi NCR Team,\n\nPlease use ' + json.insertedRMANum + ' for this RMA.\nYou should be receiving a copy of the PDF shortly.\n\nRegards,\nUNICOM Support Staff';
     } else {
-        const bodyLine = 'Hi NCR Team,\n\nThe warranty on this serial number expired on XXXXXXXXXXXXXXXXXXXX and it is no longer eligible for an RMA.\n\nRegards,\n';
+        bodyLine = 'Hi NCR Team,\n\nThe warranty on this serial number expired on XXXXXXXXXXXXXXXXXXXX and it is no longer eligible for an RMA.\n\nRegards,\n';
     }
     document.getElementById('p6').value = subjLine;
     document.getElementById('p7').value = bodyLine;
@@ -336,6 +348,10 @@ async function getEmailData(inWarranty){
     document.getElementsByName('send_email')[0].click();
 }
 
+function updateStatus(text){
+    msgOut.innerText = text ? text : '';
+}
+
 /*************************
  * BUTTON EVENTLISTENERS *
  ************************/
@@ -350,8 +366,7 @@ btnEditCase.addEventListener('click', function() {
 btnGuessTLA.addEventListener('click', function() {
     const regex = regexTLANum;
     let text = document.getElementById('cas15').value;
-
-    document.getElementById('Asset').value = text.match(regex)[1];
+    text.match(regex) ? document.getElementById('Asset').value = text.match(regex)[1] : updateStatus("Could not find TLA number");
 
 });
 
@@ -359,15 +374,14 @@ btnGuessNCRComponent.addEventListener('click', function() {
     const regex = regexPartNum;
     const text = document.getElementById('cas15').value;
 
-    document.getElementById('CF00N3600000Ny8ka').value = text.match(regex)[1];
-    
+    text.match(regex)? document.getElementById('CF00N3600000Ny8ka').value = text.match(regex)[1] : updateStatus("Could not find component number");
 });
 
 btnGuessNCRComponentSerial.addEventListener('click', function() {
     const regex = regexSerialNum;
+    let text = document.getElementById('cas15').value;
 
-    document.getElementById('00N3600000AZNxJ').value = document.getElementById('cas15').value.match(regex)[1];
-    
+    text.match(regex)? document.getElementById('00N3600000AZNxJ').value = text.match(regex)[1] : updateStatus('Could not find serial number');
 });
 
 btnSetCaseReasonFM.addEventListener('click', function() {
@@ -468,9 +482,9 @@ btnCloseCaseOOW.addEventListener('click', function() {
     document.getElementById('solNote').value = 'Out of warranty.  No RMA.  Closing ticket.';
 });
 
-/**
- * CSS STYLES
- */
+/**************
+ * CSS STYLES *
+ **************/
 
 GM.addStyle(`
     .macroBoxContainer {
@@ -551,8 +565,8 @@ GM.addStyle(`
     }
 
     .macroBoxContainer.minimize {
-        width:2em !important;
-        height:2em !important;
+        width:2.5em !important;
+        height:2.5em !important;
         overflow:hidden !important;
         margin-top:0 !important;
         margin-left:0 !important;
@@ -560,9 +574,13 @@ GM.addStyle(`
         left:-1px !important;
     }
 
+    .macroBoxUI {
+        height: 2.5em;
+        width: 2.5em;
+    }
+
     .macroBoxContainer.minimize .macroBoxContent {
         display:none;
         visibility:hidden;
     }
 `)
-
