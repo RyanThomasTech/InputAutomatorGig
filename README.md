@@ -1,0 +1,6 @@
+# InputAutomatorGig
+A freelance gig I did recently automating some inputs for data entry purposes
+
+Though userscripts are largely out-of-fashion these days, they still serve valuable purposes, and are especially relevant when interacting with older webpages or the corporate machine in general. This project was born of a conversation with a company I'd work with previously voicing a complaint and not knowing that the technology was available to solve it. Specifcally, the manager I was speaking with was lamenting that there was no way to use Autohotkey to automate webpages anymore. To my understanding, this is mostly true, but javascript can quite easily manipulate anything going on in your browser window. Things get messier when AJAX was involved, but I happened to know that the system in question was archaic enough that AJAX was most cerainly not involved. I proposed a solution to the manager's problem, and this is what resulted from it.
+
+This project also served to remind me how powerful/concise modern javascript has become. Back when I used to do more userscripts, JQuery was essentially mandatory for brevity's sake. Now, JQuery is essentially pointless. JQuery-UI probably would have let me use a much prettier interface, though, but I didn't want the clients to have to include JQuery libraries just for the sake of the buttons being more handsome.
